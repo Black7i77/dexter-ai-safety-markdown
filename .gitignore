@@ -37,3 +37,6 @@ cert.pem
 .idea/
 .DS_Store
 Thumbs.db
+.dexter-backups/
+backups/
+templates/index.backup-*.html
