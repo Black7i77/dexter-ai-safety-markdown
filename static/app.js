@@ -1305,3 +1305,77 @@ document.addEventListener("DOMContentLoaded", function () {
   if (btn) btn.addEventListener("click", dexterGenerateRealImage);
 });
 // === End Dexter Real Image Generation UI ===
+
+// === Dexter Floating Image Studio ===
+document.addEventListener("DOMContentLoaded", function () {
+  if (document.getElementById("dexterImageStudioBtn")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "dexterImageStudioBtn";
+  btn.textContent = "🎨 Image Studio";
+  document.body.appendChild(btn);
+
+  const modal = document.createElement("div");
+  modal.id = "dexterImageStudioModal";
+  modal.innerHTML = `
+    <div class="dexter-image-studio-box">
+      <button id="dexterImageStudioClose">×</button>
+      <h2>Dexter Image Studio</h2>
+      <p>Generate real AI images from a text prompt.</p>
+
+      <textarea id="dexterImagePromptFloating" rows="5"
+        placeholder="Example: A futuristic cyber wolf with glowing red eyes, dark neon background, cinematic lighting, high detail"></textarea>
+
+      <button id="dexterGenerateImageFloatingBtn">Generate Image</button>
+      <div id="dexterImageFloatingStatus" class="note"></div>
+      <div id="dexterImageFloatingResult"></div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  btn.addEventListener("click", () => {
+    modal.style.display = "flex";
+  });
+
+  document.getElementById("dexterImageStudioClose").addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+
+  document.getElementById("dexterGenerateImageFloatingBtn").addEventListener("click", async () => {
+    const prompt = document.getElementById("dexterImagePromptFloating").value.trim();
+    const status = document.getElementById("dexterImageFloatingStatus");
+    const result = document.getElementById("dexterImageFloatingResult");
+
+    if (!prompt) {
+      status.textContent = "Enter an image prompt first.";
+      return;
+    }
+
+    status.textContent = "Dexter is creating your image...";
+    result.innerHTML = "";
+
+    try {
+      const res = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({prompt})
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "Image generation failed.");
+      }
+
+      result.innerHTML = `
+        <img src="${data.image_url}" class="dexter-floating-generated-image">
+        <a href="${data.image_url}" download class="dexter-download-btn">Download Image</a>
+      `;
+
+      status.textContent = "Image created successfully.";
+    } catch (err) {
+      status.textContent = err.message || "Something went wrong.";
+    }
+  });
+});
+// === End Dexter Floating Image Studio ===
