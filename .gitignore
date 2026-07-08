@@ -41,3 +41,4 @@ Thumbs.db
 backups/
 templates/index.backup-*.html
 .env
+static/generated/

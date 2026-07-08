@@ -1985,6 +1985,88 @@ def not_found(_: Exception) -> tuple[Response, int]:
     ), 404
 
 
+
+
+# === Dexter Real Image Generation ===
+import os as _dex_os
+import uuid as _dex_uuid
+import base64 as _dex_base64
+from pathlib import Path as _DexPath
+from flask import request as _dex_request, jsonify as _dex_jsonify
+
+try:
+    from dotenv import load_dotenv as _dex_load_dotenv
+    _dex_load_dotenv()
+except Exception:
+    pass
+
+try:
+    from openai import OpenAI as _DexOpenAI
+except Exception:
+    _DexOpenAI = None
+
+_DEXTER_GENERATED_DIR = _DexPath("static/generated")
+_DEXTER_GENERATED_DIR.mkdir(parents=True, exist_ok=True)
+
+@app.post("/api/generate-image")
+def dexter_generate_image():
+    api_key = _dex_os.getenv("OPENAI_API_KEY", "").strip()
+    model = _dex_os.getenv("DEXTER_IMAGE_MODEL", "gpt-image-2").strip()
+
+    if not api_key:
+        return _dex_jsonify({
+            "ok": False,
+            "error": "OPENAI_API_KEY is missing in .env"
+        }), 500
+
+    if _DexOpenAI is None:
+        return _dex_jsonify({
+            "ok": False,
+            "error": "OpenAI Python package is not installed. Run: pip install openai"
+        }), 500
+
+    data = _dex_request.get_json(silent=True) or {}
+    prompt = (data.get("prompt") or "").strip()
+
+    if not prompt:
+        return _dex_jsonify({
+            "ok": False,
+            "error": "Please enter an image prompt."
+        }), 400
+
+    if len(prompt) > 1200:
+        return _dex_jsonify({
+            "ok": False,
+            "error": "Prompt is too long. Keep it under 1200 characters."
+        }), 400
+
+    try:
+        client = _DexOpenAI(api_key=api_key)
+        result = client.images.generate(
+            model=model,
+            prompt=prompt,
+            size="1024x1024",
+            quality="low"
+        )
+
+        image_b64 = result.data[0].b64_json
+        filename = f"dexter_{_dex_uuid.uuid4().hex}.png"
+        filepath = _DEXTER_GENERATED_DIR / filename
+        filepath.write_bytes(_dex_base64.b64decode(image_b64))
+
+        return _dex_jsonify({
+            "ok": True,
+            "image_url": f"/static/generated/{filename}"
+        })
+
+    except Exception as e:
+        return _dex_jsonify({
+            "ok": False,
+            "error": f"Image generation failed: {e}"
+        }), 500
+# === End Dexter Real Image Generation ===
+
+
 if __name__ == "__main__":
     print(f"{APP_NAME} — Created by {CREATOR}")
     print(f"Website: http://{HOST}:{PORT}")

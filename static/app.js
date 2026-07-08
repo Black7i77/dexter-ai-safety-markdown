@@ -1250,3 +1250,58 @@ function dexterMediaComingSoonMessage(kind) {
   const label = kind || "media";
   return `Dexter ${label} generation is coming soon. Real ${label} generation is not connected yet. I can help write a strong prompt instead.`;
 }
+
+
+
+// === Dexter Real Image Generation UI ===
+async function dexterGenerateRealImage() {
+  const promptEl = document.getElementById("dexterImagePrompt");
+  const statusEl = document.getElementById("dexterImageStatus");
+  const resultEl = document.getElementById("dexterImageResult");
+  const btn = document.getElementById("dexterGenerateImageBtn");
+
+  if (!promptEl || !statusEl || !resultEl || !btn) return;
+
+  const prompt = promptEl.value.trim();
+  if (!prompt) {
+    statusEl.textContent = "Please enter an image prompt.";
+    return;
+  }
+
+  statusEl.textContent = "Dexter is creating your image...";
+  resultEl.innerHTML = "";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch("/api/generate-image", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({prompt})
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || "Image generation failed.");
+    }
+
+    resultEl.innerHTML = `
+      <div class="dexter-generated-image-wrap">
+        <img src="${data.image_url}" alt="Dexter generated image" class="dexter-generated-image">
+        <a href="${data.image_url}" download class="dexter-download-btn">Download Image</a>
+      </div>
+    `;
+
+    statusEl.textContent = "Image created successfully.";
+  } catch (err) {
+    statusEl.textContent = err.message || "Something went wrong.";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const btn = document.getElementById("dexterGenerateImageBtn");
+  if (btn) btn.addEventListener("click", dexterGenerateRealImage);
+});
+// === End Dexter Real Image Generation UI ===

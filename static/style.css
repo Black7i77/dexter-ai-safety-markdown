@@ -896,3 +896,53 @@ kbd { padding: 2px 4px; border: 1px solid var(--border); border-bottom-color: rg
 .dexter-v2-card h2 {
   color: #9dc0ff;
 }
+
+
+
+/* Dexter Real Image Generation */
+.dexter-image-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#dexterImagePrompt {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 15px;
+}
+
+#dexterGenerateImageBtn,
+.dexter-download-btn {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#dexterGenerateImageBtn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.dexter-image-result {
+  margin-top: 14px;
+}
+
+.dexter-generated-image-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dexter-generated-image {
+  width: 100%;
+  max-width: 700px;
+  border-radius: 14px;
+  display: block;
+}
