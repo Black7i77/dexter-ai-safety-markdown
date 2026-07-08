@@ -1,0 +1,9 @@
+# Named Cloudflare Tunnel example.
+# Replace the placeholders after creating a tunnel in your Cloudflare account.
+tunnel: YOUR-TUNNEL-UUID
+credentials-file: /home/YOUR-LINUX-USER/.cloudflared/YOUR-TUNNEL-UUID.json
+
+ingress:
+  - hostname: dexter.your-domain.example
+    service: http://127.0.0.1:5050
+  - service: http_status:404

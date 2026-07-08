@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080910">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Beta Terms — {{ app_name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="legal-body">
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <main class="legal-shell">
+    <nav class="legal-nav"><a class="legal-brand" href="/">DEXTER AI</a><a class="legal-back" href="/">← Return to Dexter</a></nav>
+    <article class="legal-card">
+      <span class="modal-kicker">PUBLIC BETA</span>
+      <h1>Beta terms of use</h1>
+      <p class="legal-updated">Effective 5 July 2026</p>
+      <p class="legal-note">Dexter is an experimental beta service. It may be changed, rate-limited, paused, or taken offline without notice.</p>
+      <h2>Responsible use</h2>
+      <ul>
+        <li>Use Dexter only for lawful purposes.</li>
+        <li>Do not use it to harm systems or people, steal credentials, distribute malware, evade security controls, or conduct unauthorized access.</li>
+        <li>Do not deliberately overload, scrape, automate, reverse engineer, or bypass limits protecting the service.</li>
+        <li>Do not submit information you are not authorized to share.</li>
+      </ul>
+      <h2>No professional guarantee</h2>
+      <p>AI output may be incomplete, outdated, or incorrect. Dexter is not a substitute for qualified legal, medical, financial, or other professional advice. You remain responsible for decisions and commands you run.</p>
+      <h2>Availability</h2>
+      <p>The service depends on a local computer, internet connection, Cloudflare Tunnel, and Ollama. There is no uptime guarantee, and conversations may stop if any component becomes unavailable.</p>
+      <h2>Access and limits</h2>
+      <p>Access may be restricted using invitation codes, per-user rate limits, concurrency limits, or Cloudflare security controls. Abuse may result in access being blocked.</p>
+      <h2>Ownership</h2>
+      <p>The Dexter interface and project branding are created by <strong>{{ creator }}</strong>. Third-party software and AI models remain subject to their own licences and terms.</p>
+    </article>
+  </main>
+</body>
+</html>

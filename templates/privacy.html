@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080910">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Privacy — {{ app_name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="legal-body">
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <main class="legal-shell">
+    <nav class="legal-nav"><a class="legal-brand" href="/">DEXTER AI</a><a class="legal-back" href="/">← Return to Dexter</a></nav>
+    <article class="legal-card">
+      <span class="modal-kicker">PUBLIC BETA</span>
+      <h1>Privacy notice</h1>
+      <p class="legal-updated">Effective 5 July 2026</p>
+      <p class="legal-note">Dexter is a small public beta operated from a locally hosted computer. Do not submit passwords, private keys, banking information, identity documents, medical records, or other highly sensitive information.</p>
+      <h2>How chat works</h2>
+      <p>Your message travels through the public web connection to the Dexter server and is sent to an Ollama model running on the host computer. The generated answer is streamed back to your browser.</p>
+      <h2>Conversation history</h2>
+      <p>Conversation history is stored in your browser using local storage so it can appear again on that device. Dexter does not currently provide user accounts or a server-side conversation database. Clearing browser storage or using the Clear History control removes that browser copy.</p>
+      <h2>Technical information</h2>
+      <p>The service may process basic connection information such as an IP address, request time, browser request headers, and error details for security, rate limiting, and troubleshooting. Traffic delivered through Cloudflare is also processed by Cloudflare under its own terms and policies.</p>
+      <h2>AI limitations</h2>
+      <p>Prompts and responses are processed to provide the requested AI answer. Dexter can make mistakes. Important technical, financial, legal, medical, or safety-related information should be independently verified.</p>
+      <h2>Beta changes</h2>
+      <p>This notice may be updated as Dexter gains accounts, analytics, databases, or other features. Material changes should be reflected on this page before those features are used publicly.</p>
+      <p>Created by <strong>{{ creator }}</strong>.</p>
+    </article>
+  </main>
+</body>
+</html>

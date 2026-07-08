@@ -1,0 +1,39 @@
+# Private configuration
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Runtime data
+*.log
+*.sqlite
+*.sqlite3
+instance/
+cache/
+exports/
+
+# Node
+node_modules/
+
+# Cloudflare and private credentials
+.cloudflared/
+.cloudflare/
+cert.pem
+*.pem
+*.key
+*.crt
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

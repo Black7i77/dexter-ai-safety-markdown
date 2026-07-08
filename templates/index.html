@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07070b">
+  <meta name="description" content="Dexter AI — a locally powered agent workspace for coding, Linux, debugging, technical ideas and responsible defensive security. No account required.">
+  <meta name="robots" content="{% if public_beta %}noindex,nofollow{% else %}index,follow{% endif %}">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Dexter AI — Local Agent Workspace">
+  <meta property="og:description" content="A locally powered AI workspace created by Scotty Pollock. Try it without creating an account.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Dexter AI — Local Agent Workspace">
+  <meta name="twitter:description" content="Coding, debugging, Linux support and defensive security guidance. No account required.">
+  <title>{{ app_name }} — Local AI Workspace</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2307070b'/%3E%3Cpath d='M17 15h15c13 0 21 7 21 17s-8 17-21 17H17V15zm14 25c8 0 12-3 12-8s-4-8-12-8h-4v16h4z' fill='%23ff2f7d'/%3E%3Ccircle cx='49' cy='15' r='5' fill='%237a5cff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+
+/* Dexter Safety Test Upgrade */
+.safety-pass {
+  border: 1px solid rgba(255, 70, 150, 0.35);
+  background: linear-gradient(135deg, rgba(255, 0, 90, 0.12), rgba(60, 0, 90, 0.22));
+  box-shadow: 0 0 35px rgba(255, 0, 90, 0.12);
+}
+
+.safety-pass h2 {
+  color: #ff4fa3;
+}
+
+.safety-pass .note {
+  opacity: 0.82;
+  font-size: 0.95rem;
+}
+
+.dexter-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.dexter-badges .badge {
+  border: 1px solid rgba(255, 80, 170, 0.35);
+  background: rgba(255, 80, 170, 0.12);
+  color: #ffd7ee;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+</style>
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+  <div class="ambient-grid" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Dexter navigation">
+      <div class="brand brand-premium">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 64 64" role="img">
+            <path d="M17 14h15c14 0 22 7 22 18S46 50 32 50H17V14zm14 27c8 0 13-3 13-9s-5-9-13-9h-4v18h4z"/>
+          </svg>
+          <span class="brand-spark"></span>
+        </div>
+        <div class="brand-copy">
+          <div class="brand-line"><strong>DEXTER AI</strong><em class="beta-chip">BETA</em></div>
+          <span>Local intelligence workspace</span>
+        </div>
+      </div>
+
+      <button class="new-chat" id="newChatButton" type="button">
+        <span aria-hidden="true">＋</span>
+        New conversation
+      </button>
+
+      <nav class="mode-list" aria-label="Dexter modes">
+        <p class="section-label">Intelligence mode</p>
+        <button class="mode-button agi-mode active" data-mode="agi" type="button">
+          <span class="mode-icon agi-icon">◈</span><span><strong>Agent Core</strong><small>Plan, execute and verify</small></span><b>NEW</b>
+        </button>
+        <button class="mode-button" data-mode="general" type="button">
+          <span class="mode-icon">✦</span><span><strong>General</strong><small>Everyday intelligence</small></span>
+        </button>
+        <button class="mode-button" data-mode="build" type="button">
+          <span class="mode-icon">⌘</span><span><strong>Build</strong><small>Software engineering</small></span>
+        </button>
+        <button class="mode-button" data-mode="debug" type="button">
+          <span class="mode-icon">⌁</span><span><strong>Debug</strong><small>Find and fix problems</small></span>
+        </button>
+        <button class="mode-button" data-mode="linux" type="button">
+          <span class="mode-icon">›_</span><span><strong>Linux</strong><small>Kali and Debian help</small></span>
+        </button>
+        <button class="mode-button" data-mode="security" type="button">
+          <span class="mode-icon">◇</span><span><strong>Security</strong><small>Defensive analysis</small></span>
+        </button>
+      </nav>
+
+      <section class="core-card" aria-label="Dexter system core">
+        <div class="core-card-head">
+          <span class="core-pulse"></span>
+          <strong>System core</strong>
+        </div>
+        <div class="core-row"><span>Model</span><b id="coreModelName">Local Ollama model</b></div>
+        <div class="core-row"><span>Verification</span><b id="factCheckStatus">Checking…</b></div>
+        <div class="core-row"><span>Access</span><b id="guestAccessStatus">No account required</b></div>
+      </section>
+
+      <section class="history-section" aria-label="Recent conversations">
+        <div class="history-heading">
+          <p class="section-label">Recent</p>
+          <button class="icon-button tiny" id="clearHistoryButton" type="button" title="Clear conversation history" aria-label="Clear conversation history">×</button>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </section>
+
+      <div class="sidebar-footer">
+        <div class="privacy-card">
+          <span class="privacy-dot"></span>
+          <div><strong>Private guest access</strong><small>No Dexter account or login required</small></div>
+        </div>
+        <div class="sidebar-links"><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div>
+        <p>Created by <strong>{{ creator }}</strong></p>
+      </div>
+    </aside>
+
+    <main class="main-panel">
+      <header class="topbar">
+        <button class="icon-button mobile-menu" id="menuButton" type="button" aria-label="Open navigation">☰</button>
+        <div class="conversation-heading">
+          <span class="eyebrow">DEXTER AI WORKSPACE <b class="top-beta">PUBLIC BETA</b></span>
+          <h1 id="conversationTitle">New conversation</h1>
+
+<div class="dexter-badges">
+  <span class="badge">Local AI</span>
+  <span class="badge">Privacy First</span>
+  <span class="badge">Ethical Security</span>
+  <span class="badge">Jailbreak-Resistant</span>
+  <span class="badge">Safety Tested</span>
+  <span class="badge">Generate Art</span>
+  <span class="badge">Website Archive Checks</span>
+</div>
+
+        </div>
+        <div class="topbar-actions">
+          <div class="no-login-badge" title="Dexter does not require a user account"><span>●</span> NO ACCOUNT</div>
+          <button class="icon-button voice-toggle" id="voiceToggle" type="button" title="Dexter voice settings" aria-label="Open Dexter voice settings" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h3l4 4V6L8 10H5zm10.5-.5a4 4 0 0 1 0 5m2.5-8a8 8 0 0 1 0 11"/></svg>
+          </button>
+          <div class="status-pill" id="statusPill" data-state="checking">
+            <span></span><strong id="statusText">Checking Ollama</strong>
+          </div>
+          <label class="model-picker" title="Choose an installed Ollama model">
+            <span>Model</span>
+            <select id="modelSelect" aria-label="Ollama model">
+              <option value="{{ default_model }}">{{ default_model }}</option>
+            </select>
+          </label>
+        </div>
+      </header>
+
+      <section class="chat-stage" id="chatStage">
+        <div class="welcome welcome-pro" id="welcomeScreen">
+          <div class="hero-layout">
+            <div class="hero-copy">
+              <div class="hero-badges">
+                <span class="hero-badge primary">THREE-STAGE AGENT WORKFLOW</span>
+                <span class="hero-badge">NO LOGIN REQUIRED</span>
+              </div>
+              <span class="welcome-kicker">LOCAL MODEL · SOURCE CHECKING · PROJECT EXPORT</span>
+              <h2>One intelligent workspace.<br><em>Built to get things done.</em></h2>
+              <p>Dexter coordinates planning, coding, debugging, Linux support and responsible defensive-security guidance through one clean local AI workspace.</p>
+
+              <div class="hero-actions">
+                <button class="hero-primary" id="startDexterButton" type="button">Start with Dexter <span>→</span></button>
+                <button class="hero-secondary" id="agiModeButton" type="button"><span>◈</span> Activate Agent Core</button>
+              </div>
+
+              <div class="trust-strip" aria-label="Dexter benefits">
+                <div><span>01</span><strong>No account</strong><small>Open and begin immediately</small></div>
+                <div><span>02</span><strong>Local core</strong><small>Powered by Ollama</small></div>
+                <div><span>03</span><strong>Fact checks</strong><small>Current claims can be sourced</small></div>
+              </div>
+            </div>
+
+            <div class="hero-visual" aria-hidden="true">
+              <div class="orb-shell">
+                <div class="orb-halo halo-a"></div>
+                <div class="orb-halo halo-b"></div>
+                <div class="orb-halo halo-c"></div>
+                <div class="intelligence-orb professional-orb">
+                  <div class="orb-ring ring-one"></div>
+                  <div class="orb-ring ring-two"></div>
+                  <div class="orb-core">
+                    <svg viewBox="0 0 120 120">
+                      <path d="M37 28c-10 5-16 16-14 28-8 8-8 22 1 30 3 13 16 21 29 17 5 7 15 10 23 6 12-1 21-11 21-23 10-8 10-24 0-32 1-13-8-25-20-28-8-10-25-9-32 2-3-1-6-1-8 0z"/>
+                      <path class="brain-line" d="M46 31c7 7 5 16 1 22m-18 4c8-2 15 1 19 8m-19 21c8-7 17-7 25-2m4-51c-5 10-3 20 5 27m12-27c-8 7-9 17-5 25m23-3c-9-2-17 2-21 10m20 22c-8-7-18-7-26-1M54 83c-1 9 3 16 10 22"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div class="system-console">
+                <div class="console-head"><span></span><b>DEXTER CORE</b><em id="heroSystemStatus" data-state="checking">Checking Ollama</em></div>
+                <div class="console-line"><span>MODEL</span><strong id="heroModelName">Local model</strong></div>
+                <div class="console-line"><span>MODE</span><strong>Plan · execute · verify</strong></div>
+                <div class="console-line"><span>ACCESS</span><strong>Guest session</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <section class="capability-section" aria-labelledby="capabilityTitle">
+            <div class="section-heading-pro">
+              <div><span>CAPABILITIES</span><h3 id="capabilityTitle">Choose a task and begin</h3></div>
+              <p>Dexter switches its reasoning style to match the work.</p>
+            </div>
+            <div class="suggestion-grid suggestion-grid-pro">
+              <button class="suggestion-card" type="button" data-prompt="Build a complete professional Python application for me. Start by defining the goal, architecture, files, implementation, testing and exact run instructions.">
+                <span>BUILD</span><strong>Create a complete application</strong><small>Architecture, code, testing and ZIP export</small><i>01</i>
+              </button>
+              <button class="suggestion-card" type="button" data-prompt="Help me diagnose a Linux program that opens and immediately crashes. Use evidence, identify the likely root cause, give the smallest safe fix and show me how to verify it.">
+                <span>DEBUG</span><strong>Diagnose a Linux crash</strong><small>Evidence-first troubleshooting</small><i>02</i>
+              </button>
+              <button class="suggestion-card" type="button" data-prompt="Review my project idea like a senior engineer. Identify the goal, strongest parts, risks, missing pieces and the smartest next build step.">
+                <span>THINK</span><strong>Analyse a project idea</strong><small>Clear planning and practical decisions</small><i>03</i>
+              </button>
+              <button class="suggestion-card" type="button" data-prompt="Perform a defensive security review of my application design. Focus on authentication, secrets, input validation, logging, backups and safe hardening. Do not provide offensive intrusion steps.">
+                <span>DEFEND</span><strong>Review application security</strong><small>Responsible defensive guidance</small><i>04</i>
+              </button>
+            </div>
+          </section>
+
+          <div class="agi-disclosure">
+            <span>◈</span>
+            <div><strong>How Agent Core works</strong><p>Agent Core plans the task, builds the answer, and checks the result before replying. It is a local agent workflow powered by Ollama—not a claim of consciousness or human-level intelligence.</p></div>
+          </div>
+        </div>
+
+        <div class="messages" id="messages" aria-live="polite" aria-label="Conversation"></div>
+      </section>
+
+      <footer class="composer-zone">
+        <div class="composer" id="composer">
+          <div class="composer-topline"><span class="composer-core-dot"></span><strong>Ask Dexter anything technical</strong><em>No account required</em></div>
+          <textarea id="messageInput" rows="1" maxlength="8000" placeholder="Describe what you want to build, fix, understand or verify…" aria-label="Message Dexter"></textarea>
+          <div class="composer-actions">
+            <div class="composer-meta">
+              <span id="activeModeLabel">Agent Core mode</span>
+              <span class="separator">•</span>
+              <span><kbd>Enter</kbd> send · <kbd>Shift</kbd> + <kbd>Enter</kbd> new line</span>
+            </div>
+            <button class="send-button" id="sendButton" type="button" aria-label="Send message">
+              <span>Send</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+            </button>
+            <button class="stop-button hidden" id="stopButton" type="button">Stop</button>
+          </div>
+        </div>
+        <p class="disclaimer">Public beta · Dexter can make mistakes. Verify important commands and information. <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+      </footer>
+    
+<section class="feature-card safety-pass">
+  <h2>Safety Test Passed</h2>
+  <p>
+    Dexter has been tested against unsafe roleplay prompts such as
+    <strong>“act like WormGPT”</strong> or <strong>“ignore safety rules.”</strong>
+  </p>
+
+  <p>
+    Dexter is designed to refuse requests involving malware, scams,
+    credential theft, password stealing, and unauthorized access.
+  </p>
+
+  <p class="note">
+    Dexter can explain dangerous concepts at a high level for learning,
+    but it redirects users toward ethical cybersecurity and defensive education.
+  </p>
+</section>
+
+<section class="feature-card">
+  <h2>Jailbreak-Resistant Safety</h2>
+  <p>
+    Dexter is designed to resist unsafe prompts, prompt-injection attempts,
+    password theft requests, malware requests, scams, and unauthorized access.
+  </p>
+  <p class="note">
+    No AI system should be claimed as impossible to bypass. Dexter is built with
+    strong safety rules and safe redirection for ethical learning.
+  </p>
+</section>
+
+</main>
+  </div>
+
+  <section class="voice-panel hidden" id="voicePanel" role="dialog" aria-modal="false" aria-labelledby="voicePanelTitle">
+    <div class="voice-panel-head">
+      <div><span class="modal-kicker">DEXTER AUDIO</span><h2 id="voicePanelTitle">Dexter Voice</h2></div>
+      <button class="icon-button tiny" id="closeVoicePanel" type="button" aria-label="Close voice settings">×</button>
+    </div>
+    <p class="voice-intro">Read Dexter’s replies aloud using the speech voices available on this device. No answer text is sent to an external voice service.</p>
+    <div class="voice-unsupported hidden" id="voiceUnsupported">This browser does not support speech synthesis. Try a current browser.</div>
+    <div class="voice-controls" id="voiceControls">
+      <label><span>Voice style</span><select id="voiceProfile"><option value="meme">Dexter Meme</option><option value="deep">Deep Dexter</option><option value="professional">Professional</option></select></label>
+      <label><span>Device voice</span><select id="voiceSelect"><option value="">Automatic</option></select></label>
+      <label class="voice-range-label"><span>Speaking speed <output id="voiceRateValue">0.85×</output></span><input id="voiceRate" type="range" min="0.65" max="1.35" step="0.05" value="0.85"></label>
+      <label class="voice-switch"><span><strong>Auto-read replies</strong><small>Speak each completed Dexter answer</small></span><input id="autoSpeak" type="checkbox" aria-label="Automatically read Dexter replies"></label>
+      <div class="voice-actions"><button id="testVoice" type="button">Test voice</button><button id="stopVoice" type="button">Stop speaking</button></div>
+      <p class="voice-note">The exact sound depends on the voices installed on each visitor’s phone or computer.</p>
+    </div>
+  </section>
+
+  <div class="beta-modal hidden" id="betaModal" role="dialog" aria-modal="true" aria-labelledby="betaModalTitle">
+    <div class="beta-modal-card beta-modal-pro">
+      <span class="modal-kicker">DEXTER AI PUBLIC BETA</span>
+      <h2 id="betaModalTitle">Enter the workspace</h2>
+      <p>No registration is required. Dexter runs on a privately hosted local AI computer and is shared publicly for testing.</p>
+      <div class="beta-facts">
+        <div><strong>No Dexter account</strong><span>Your conversation history remains in this browser unless you clear it.</span></div>
+        <div><strong>Protect private information</strong><span>Do not submit passwords, banking details, private keys or highly sensitive information.</span></div>
+        <div><strong>Experimental intelligence</strong><span>Dexter can make mistakes. Verify important commands, claims and decisions.</span></div>
+      </div>
+      <label class="access-field hidden" id="accessField"><span>Beta access code</span><input id="accessCodeInput" type="password" autocomplete="off" maxlength="128" placeholder="Enter access code"></label>
+      <p class="modal-error hidden" id="accessError"></p>
+      <div class="modal-links"><a href="/privacy" target="_blank" rel="noopener">Privacy notice</a><a href="/terms" target="_blank" rel="noopener">Beta terms</a></div>
+      <button class="modal-continue" id="acceptBetaButton" type="button">Continue without an account</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>
