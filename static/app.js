@@ -6,13 +6,24 @@ const SETTINGS_KEY = "dexter-ai-settings-v1";
 const state = {
   conversations: [],
   activeId: null,
-  mode: "general",
+  mode: "agi",
   model: "",
   generating: false,
   abortController: null,
   online: false,
   publicConfig: null,
   accessKey: sessionStorage.getItem("dexter-beta-access-key") || "",
+  voice: {
+    supported: "speechSynthesis" in window && "SpeechSynthesisUtterance" in window,
+    profile: "meme",
+    rate: 0.85,
+    pitch: 0.70,
+    autoSpeak: false,
+    voiceURI: "",
+    voices: [],
+    speakingMessageId: null,
+    generation: 0,
+  },
 };
 
 const elements = {
@@ -42,6 +53,25 @@ const elements = {
   accessCodeInput: document.getElementById("accessCodeInput"),
   accessError: document.getElementById("accessError"),
   acceptBetaButton: document.getElementById("acceptBetaButton"),
+  voiceToggle: document.getElementById("voiceToggle"),
+  voicePanel: document.getElementById("voicePanel"),
+  closeVoicePanel: document.getElementById("closeVoicePanel"),
+  voiceUnsupported: document.getElementById("voiceUnsupported"),
+  voiceControls: document.getElementById("voiceControls"),
+  voiceProfile: document.getElementById("voiceProfile"),
+  voiceSelect: document.getElementById("voiceSelect"),
+  voiceRate: document.getElementById("voiceRate"),
+  voiceRateValue: document.getElementById("voiceRateValue"),
+  autoSpeak: document.getElementById("autoSpeak"),
+  testVoice: document.getElementById("testVoice"),
+  stopVoice: document.getElementById("stopVoice"),
+  startDexterButton: document.getElementById("startDexterButton"),
+  agiModeButton: document.getElementById("agiModeButton"),
+  coreModelName: document.getElementById("coreModelName"),
+  factCheckStatus: document.getElementById("factCheckStatus"),
+  guestAccessStatus: document.getElementById("guestAccessStatus"),
+  heroModelName: document.getElementById("heroModelName"),
+  heroSystemStatus: document.getElementById("heroSystemStatus"),
 };
 
 function uid() {
@@ -59,8 +89,13 @@ function loadState() {
 
   try {
     const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
-    if (typeof settings.mode === "string") state.mode = settings.mode;
+    if (["agi", "general", "build", "debug", "linux", "security"].includes(settings.mode)) state.mode = settings.mode;
     if (typeof settings.model === "string") state.model = settings.model;
+    if (["meme", "deep", "professional"].includes(settings.voiceProfile)) state.voice.profile = settings.voiceProfile;
+    if (Number.isFinite(settings.voiceRate)) state.voice.rate = Math.min(1.35, Math.max(0.65, settings.voiceRate));
+    if (Number.isFinite(settings.voicePitch)) state.voice.pitch = Math.min(1.4, Math.max(0.35, settings.voicePitch));
+    if (typeof settings.autoSpeak === "boolean") state.voice.autoSpeak = settings.autoSpeak;
+    if (typeof settings.voiceURI === "string") state.voice.voiceURI = settings.voiceURI;
   } catch (_) {
     // Use defaults.
   }
@@ -70,7 +105,15 @@ function loadState() {
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.conversations.slice(0, 30)));
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify({ mode: state.mode, model: state.model }));
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+    mode: state.mode,
+    model: state.model,
+    voiceProfile: state.voice.profile,
+    voiceRate: state.voice.rate,
+    voicePitch: state.voice.pitch,
+    autoSpeak: state.voice.autoSpeak,
+    voiceURI: state.voice.voiceURI,
+  }));
 }
 
 function currentConversation() {
@@ -119,7 +162,7 @@ function clearHistory() {
 }
 
 function setMode(mode) {
-  const valid = ["general", "build", "debug", "linux", "security"];
+  const valid = ["agi", "general", "build", "debug", "linux", "security"];
   if (!valid.includes(mode) || state.generating) return;
   state.mode = mode;
   const conversation = currentConversation();
@@ -129,7 +172,7 @@ function setMode(mode) {
 }
 
 function modeName(mode) {
-  return ({ general: "General", build: "Build", debug: "Debug", linux: "Linux", security: "Security" })[mode] || "General";
+  return ({ agi: "Agent Core", general: "General", build: "Build", debug: "Debug", linux: "Linux", security: "Security" })[mode] || "Agent Core";
 }
 
 function renderModes() {
@@ -369,6 +412,219 @@ function renderRichText(container, content) {
   }
 }
 
+
+const VOICE_PROFILES = {
+  meme: { rate: 0.85, pitch: 0.70 },
+  deep: { rate: 0.76, pitch: 0.50 },
+  professional: { rate: 1.0, pitch: 1.0 },
+};
+
+function openVoicePanel() {
+  elements.voicePanel.classList.remove("hidden");
+  elements.voiceToggle.setAttribute("aria-expanded", "true");
+}
+
+function closeVoicePanel() {
+  elements.voicePanel.classList.add("hidden");
+  elements.voiceToggle.setAttribute("aria-expanded", "false");
+}
+
+function updateVoiceControls() {
+  elements.voiceUnsupported.classList.toggle("hidden", state.voice.supported);
+  elements.voiceControls.classList.toggle("hidden", !state.voice.supported);
+  elements.voiceToggle.disabled = !state.voice.supported;
+  elements.voiceProfile.value = state.voice.profile;
+  elements.voiceRate.value = String(state.voice.rate);
+  elements.voiceRateValue.textContent = `${state.voice.rate.toFixed(2)}×`;
+  elements.autoSpeak.checked = state.voice.autoSpeak;
+  if ([...elements.voiceSelect.options].some((option) => option.value === state.voice.voiceURI)) {
+    elements.voiceSelect.value = state.voice.voiceURI;
+  }
+}
+
+function voiceScore(voice) {
+  let score = 0;
+  const lang = String(voice.lang || "").toLowerCase();
+  const name = String(voice.name || "").toLowerCase();
+  if (lang.startsWith("en-au")) score += 60;
+  else if (lang.startsWith("en-gb")) score += 50;
+  else if (lang.startsWith("en-us")) score += 45;
+  else if (lang.startsWith("en")) score += 35;
+  if (/male|daniel|david|james|gordon|aaron|alex/.test(name)) score += 12;
+  if (voice.localService) score += 5;
+  if (voice.default) score += 3;
+  return score;
+}
+
+function populateVoices() {
+  if (!state.voice.supported) return;
+  const voices = window.speechSynthesis.getVoices().slice().sort((a, b) => {
+    const languageOrder = String(a.lang).localeCompare(String(b.lang));
+    return languageOrder || String(a.name).localeCompare(String(b.name));
+  });
+  state.voice.voices = voices;
+  const previous = state.voice.voiceURI;
+  elements.voiceSelect.replaceChildren();
+  const automatic = document.createElement("option");
+  automatic.value = "";
+  automatic.textContent = "Automatic (recommended)";
+  elements.voiceSelect.append(automatic);
+  for (const voice of voices) {
+    const option = document.createElement("option");
+    option.value = voice.voiceURI;
+    option.textContent = `${voice.name} — ${voice.lang}${voice.localService ? " · device" : ""}`;
+    elements.voiceSelect.append(option);
+  }
+  if (previous && voices.some((voice) => voice.voiceURI === previous)) {
+    elements.voiceSelect.value = previous;
+  }
+}
+
+function selectedSpeechVoice() {
+  if (state.voice.voiceURI) {
+    const selected = state.voice.voices.find((voice) => voice.voiceURI === state.voice.voiceURI);
+    if (selected) return selected;
+  }
+  return state.voice.voices
+    .filter((voice) => String(voice.lang || "").toLowerCase().startsWith("en"))
+    .sort((a, b) => voiceScore(b) - voiceScore(a))[0] || state.voice.voices[0] || null;
+}
+
+function speechText(content) {
+  return String(content || "")
+    .replace(/```[\s\S]*?```/g, " Code block omitted. ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\[([^\]]+)\]\((?:https?:\/\/|mailto:)[^)]+\)/g, "$1")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s*(?:[-+*]|\d+[.)])\s+/gm, "")
+    .replace(/^\s*>\s?/gm, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/[*_~]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 12000);
+}
+
+function splitSpeech(text, limit = 220) {
+  const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
+  const chunks = [];
+  let current = "";
+  for (const sentence of sentences) {
+    const part = sentence.trim();
+    if (!part) continue;
+    if ((current + " " + part).trim().length <= limit) {
+      current = `${current} ${part}`.trim();
+      continue;
+    }
+    if (current) chunks.push(current);
+    if (part.length <= limit) {
+      current = part;
+    } else {
+      const words = part.split(/\s+/);
+      current = "";
+      for (const word of words) {
+        if ((current + " " + word).trim().length > limit) {
+          if (current) chunks.push(current);
+          current = word;
+        } else {
+          current = `${current} ${word}`.trim();
+        }
+      }
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+function updateSpeakingButtons() {
+  document.querySelectorAll(".speak-message").forEach((button) => {
+    const active = button.dataset.messageId === state.voice.speakingMessageId;
+    button.classList.toggle("speaking", active);
+    button.textContent = active ? "Stop voice" : "Read aloud";
+    button.setAttribute("aria-label", active ? "Stop reading this reply" : "Read this Dexter reply aloud");
+  });
+  elements.stopVoice.disabled = !state.voice.speakingMessageId;
+  elements.voiceToggle.classList.toggle("speaking", Boolean(state.voice.speakingMessageId));
+}
+
+function stopSpeech() {
+  if (!state.voice.supported) return;
+  state.voice.generation += 1;
+  window.speechSynthesis.cancel();
+  state.voice.speakingMessageId = null;
+  updateSpeakingButtons();
+}
+
+function speakContent(content, messageId = "voice-test") {
+  if (!state.voice.supported) {
+    showToast("Speech is not supported in this browser.");
+    return;
+  }
+  const text = speechText(content);
+  if (!text) {
+    showToast("There is no readable text in this reply.");
+    return;
+  }
+
+  stopSpeech();
+  const generation = ++state.voice.generation;
+  const chunks = splitSpeech(text);
+  const voice = selectedSpeechVoice();
+  state.voice.speakingMessageId = messageId;
+  updateSpeakingButtons();
+
+  const speakNext = (index) => {
+    if (generation !== state.voice.generation || index >= chunks.length) {
+      if (generation === state.voice.generation) {
+        state.voice.speakingMessageId = null;
+        updateSpeakingButtons();
+      }
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(chunks[index]);
+    utterance.rate = state.voice.rate;
+    utterance.pitch = state.voice.pitch;
+    utterance.volume = 1;
+    if (voice) utterance.voice = voice;
+    utterance.onend = () => speakNext(index + 1);
+    utterance.onerror = (event) => {
+      if (generation !== state.voice.generation || event.error === "interrupted" || event.error === "canceled") return;
+      state.voice.speakingMessageId = null;
+      updateSpeakingButtons();
+      showToast("The browser voice stopped unexpectedly.");
+    };
+    window.speechSynthesis.speak(utterance);
+  };
+
+  speakNext(0);
+}
+
+function toggleMessageSpeech(message) {
+  if (state.voice.speakingMessageId === message.id) {
+    stopSpeech();
+  } else {
+    speakContent(message.content, message.id);
+  }
+}
+
+function applyVoiceProfile(profile) {
+  const preset = VOICE_PROFILES[profile] || VOICE_PROFILES.meme;
+  state.voice.profile = profile in VOICE_PROFILES ? profile : "meme";
+  state.voice.rate = preset.rate;
+  state.voice.pitch = preset.pitch;
+  saveState();
+  updateVoiceControls();
+}
+
+function initializeVoice() {
+  updateVoiceControls();
+  if (!state.voice.supported) return;
+  populateVoices();
+  window.speechSynthesis.addEventListener?.("voiceschanged", populateVoices);
+  window.addEventListener("beforeunload", stopSpeech);
+}
+
 function createMessageElement(message, streaming = false) {
   const article = document.createElement("article");
   article.className = `message ${message.role}`;
@@ -386,7 +642,19 @@ function createMessageElement(message, streaming = false) {
   const author = document.createElement("strong");
   author.textContent = message.role === "assistant" ? "Dexter" : "You";
   const detail = document.createElement("span");
-  detail.textContent = message.role === "assistant" ? (message.model || modeName(message.mode || state.mode)) : "";
+  if (message.role === "assistant") {
+    const labels = [message.mode === "agi" ? "Agent Core" : (message.model || modeName(message.mode || state.mode))];
+    if (message.webVerified) {
+      labels.push(message.sourceCount ? `${message.sourceCount} sources checked` : "web verified");
+    } else if (message.factChecked) {
+      labels.push("verification unavailable");
+    }
+    if (message.deepThinking) labels.push("deep reasoning");
+    if (message.agentValidated) labels.push("validated");
+    detail.textContent = labels.filter(Boolean).join(" · ");
+  } else {
+    detail.textContent = "";
+  }
   head.append(author, detail);
 
   const body = document.createElement("div");
@@ -419,6 +687,16 @@ function createMessageElement(message, streaming = false) {
   tools.append(copyButton);
 
   if (message.role === "assistant") {
+    const speakButton = document.createElement("button");
+    speakButton.type = "button";
+    speakButton.className = "message-tool speak-message";
+    speakButton.dataset.messageId = message.id;
+    speakButton.textContent = state.voice.speakingMessageId === message.id ? "Stop voice" : "Read aloud";
+    speakButton.disabled = streaming || !state.voice.supported;
+    speakButton.classList.toggle("hidden", !state.voice.supported);
+    speakButton.addEventListener("click", () => toggleMessageSpeech(message));
+    tools.append(speakButton);
+
     const exportButton = document.createElement("button");
     exportButton.type = "button";
     exportButton.className = "message-tool export-project";
@@ -461,6 +739,10 @@ function renderAll() {
 function setStatus(status, text) {
   elements.statusPill.dataset.state = status;
   elements.statusText.textContent = text;
+  if (elements.heroSystemStatus) {
+    elements.heroSystemStatus.textContent = text;
+    elements.heroSystemStatus.dataset.state = status;
+  }
 }
 
 async function loadPublicConfig() {
@@ -469,6 +751,10 @@ async function loadPublicConfig() {
     const data = await response.json();
     if (!response.ok || !data.ok) throw new Error(data.error || "Could not load Dexter configuration.");
     state.publicConfig = data;
+    if (elements.factCheckStatus) elements.factCheckStatus.textContent = data.fact_check_enabled ? "Source checks on" : "Source checks off";
+    if (elements.guestAccessStatus) elements.guestAccessStatus.textContent = data.no_account_required ? "No account required" : "Access code enabled";
+    if (elements.coreModelName) elements.coreModelName.textContent = data.smart_model || "Local Ollama model";
+    if (elements.heroModelName) elements.heroModelName.textContent = data.smart_model || "Local model";
 
     const accepted = localStorage.getItem("dexter-public-beta-accepted-v1") === "yes";
     const needsAccess = Boolean(data.access_required && !state.accessKey);
@@ -580,12 +866,27 @@ function setGenerating(generating) {
 function updateStreamingMessage(message, element, streaming = true) {
   const body = element.querySelector(".message-body");
   const detail = element.querySelector(".message-head span");
-  if (detail) detail.textContent = message.model || modeName(message.mode || state.mode);
+  if (detail) {
+    const labels = [message.mode === "agi" ? "Agent Core" : (message.model || modeName(message.mode || state.mode))];
+    if (message.webVerified) {
+      labels.push(message.sourceCount ? `${message.sourceCount} sources checked` : "web verified");
+    } else if (message.factChecked) {
+      labels.push("verification unavailable");
+    }
+    if (message.deepThinking) labels.push("deep reasoning");
+    if (message.agentValidated) labels.push("validated");
+    detail.textContent = labels.filter(Boolean).join(" · ");
+  }
   renderRichText(body, message.content || "");
   if (streaming) {
     const cursor = document.createElement("span");
     cursor.className = "cursor";
     body.append(cursor);
+  }
+  const speakButton = element.querySelector(".speak-message");
+  if (speakButton) {
+    speakButton.disabled = streaming || !state.voice.supported;
+    speakButton.classList.toggle("hidden", !state.voice.supported);
   }
   const exportButton = element.querySelector(".export-project");
   if (exportButton) {
@@ -703,7 +1004,35 @@ async function sendMessage(prefilledText = null) {
 
         if (event.type === "meta") {
           assistantMessage.model = event.model || assistantMessage.model;
+          assistantMessage.webVerified = Boolean(event.web_verified);
+          assistantMessage.factChecked = Boolean(event.fact_checked);
+          assistantMessage.sourceCount = Number(event.source_count || 0);
+          assistantMessage.deepThinking = Boolean(event.thinking);
+          updateStreamingMessage(assistantMessage, assistantElement, true);
+        } else if (event.type === "thinking") {
+          assistantMessage.deepThinking = true;
+          setStatus("working", "Dexter reasoning");
+          updateStreamingMessage(assistantMessage, assistantElement, true);
+        } else if (event.type === "stage") {
+          const stageLabels = {
+            planning: "Agent Core: planning",
+            executing: "Agent Core: executing",
+            verifying: "Agent Core: validating",
+            fallback: "Agent Core: standard fallback",
+          };
+          setStatus("working", event.label || stageLabels[event.stage] || "Dexter working");
+          assistantMessage.agentic = event.stage !== "fallback";
+          updateStreamingMessage(assistantMessage, assistantElement, true);
+        } else if (event.type === "heartbeat") {
+          const elapsed = Number(event.elapsed_seconds || 0);
+          const suffix = elapsed > 0 ? ` (${elapsed}s)` : "";
+          setStatus("working", `${event.label || "Agent Core is still working"}${suffix}`);
+        } else if (event.type === "validation") {
+          assistantMessage.agentValidated = Boolean(event.ok);
+          setStatus("working", event.ok ? "Agent Core: response validated" : "Agent Core: response delivered with warnings");
+          updateStreamingMessage(assistantMessage, assistantElement, true);
         } else if (event.type === "token") {
+          setStatus("working", "Dexter answering");
           assistantMessage.content += event.content || "";
           updateStreamingMessage(assistantMessage, assistantElement, true);
           scrollToBottom();
@@ -723,7 +1052,10 @@ async function sendMessage(prefilledText = null) {
     if (error.name === "AbortError") {
       if (!assistantMessage.content) assistantMessage.content = "Generation stopped.";
     } else {
-      assistantMessage.error = error.message || "Dexter could not complete the response.";
+      const rawError = error.message || "Dexter could not complete the response.";
+      assistantMessage.error = /network|failed to fetch/i.test(rawError)
+        ? "The public connection was interrupted. Agent Core now keeps the connection alive; retry this request once."
+        : rawError;
       if (!assistantMessage.content) assistantMessage.content = "I could not complete that response.";
       if (/connect|offline|Ollama/i.test(assistantMessage.error)) {
         state.online = false;
@@ -735,6 +1067,9 @@ async function sendMessage(prefilledText = null) {
     saveState();
     setGenerating(false);
     state.abortController = null;
+    if (state.voice.autoSpeak && assistantMessage.content.trim() && !assistantMessage.error) {
+      speakContent(assistantMessage.content, assistantMessage.id);
+    }
     renderHistory();
     scrollToBottom();
     elements.messageInput.disabled = false;
@@ -819,6 +1154,14 @@ function openSidebar() { document.body.classList.add("sidebar-open"); }
 function closeSidebar() { document.body.classList.remove("sidebar-open"); }
 
 function bindEvents() {
+  elements.startDexterButton?.addEventListener("click", () => {
+    elements.messageInput.focus();
+    elements.messageInput.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+  elements.agiModeButton?.addEventListener("click", () => {
+    setMode("agi");
+    elements.messageInput.focus();
+  });
   elements.newChatButton.addEventListener("click", () => {
     if (!state.generating) createConversation();
   });
@@ -848,9 +1191,39 @@ function bindEvents() {
   elements.accessCodeInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") acceptPublicBeta();
   });
+  elements.voiceToggle.addEventListener("click", () => {
+    if (elements.voicePanel.classList.contains("hidden")) openVoicePanel();
+    else closeVoicePanel();
+  });
+  elements.closeVoicePanel.addEventListener("click", closeVoicePanel);
+  elements.voiceProfile.addEventListener("change", () => applyVoiceProfile(elements.voiceProfile.value));
+  elements.voiceSelect.addEventListener("change", () => {
+    state.voice.voiceURI = elements.voiceSelect.value;
+    saveState();
+  });
+  elements.voiceRate.addEventListener("input", () => {
+    state.voice.rate = Number(elements.voiceRate.value);
+    elements.voiceRateValue.textContent = `${state.voice.rate.toFixed(2)}×`;
+    saveState();
+  });
+  elements.autoSpeak.addEventListener("change", () => {
+    state.voice.autoSpeak = elements.autoSpeak.checked;
+    saveState();
+    showToast(state.voice.autoSpeak ? "Automatic voice enabled" : "Automatic voice disabled");
+  });
+  elements.testVoice.addEventListener("click", () => {
+    speakContent("Dexter meme voice online. Locally powered, intelligent, and independent. The world is yours.", "voice-test");
+  });
+  elements.stopVoice.addEventListener("click", stopSpeech);
+  document.addEventListener("click", (event) => {
+    if (elements.voicePanel.classList.contains("hidden")) return;
+    if (elements.voicePanel.contains(event.target) || elements.voiceToggle.contains(event.target)) return;
+    closeVoicePanel();
+  });
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
-      if (state.generating) stopGeneration();
+      if (!elements.voicePanel.classList.contains("hidden")) closeVoicePanel();
+      else if (state.generating) stopGeneration();
       else closeSidebar();
     }
   });
@@ -859,6 +1232,7 @@ function bindEvents() {
 async function initializeDexter() {
   loadState();
   bindEvents();
+  initializeVoice();
   renderAll();
   autoResize();
   await loadPublicConfig();

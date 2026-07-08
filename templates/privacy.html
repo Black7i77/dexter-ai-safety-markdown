@@ -23,6 +23,8 @@
       <p>Conversation history is stored in your browser using local storage so it can appear again on that device. Dexter does not currently provide user accounts or a server-side conversation database. Clearing browser storage or using the Clear History control removes that browser copy.</p>
       <h2>Technical information</h2>
       <p>The service may process basic connection information such as an IP address, request time, browser request headers, and error details for security, rate limiting, and troubleshooting. Traffic delivered through Cloudflare is also processed by Cloudflare under its own terms and policies.</p>
+      <h2>Optional current-information verification</h2>
+      <p>The operator may enable a web-verification feature for clearly time-sensitive public questions. When enabled, a shortened version of that public search question is sent from the Dexter server to Ollama's web-search service so Dexter can use current sources. Passwords, verification codes, private keys, banking details, medical records, and similar sensitive prompts are excluded from automatic search. The feature is disabled unless the server operator configures it.</p>
       <h2>AI limitations</h2>
       <p>Prompts and responses are processed to provide the requested AI answer. Dexter can make mistakes. Important technical, financial, legal, medical, or safety-related information should be independently verified.</p>
       <h2>Beta changes</h2>
