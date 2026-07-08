@@ -884,3 +884,15 @@ kbd { padding: 2px 4px; border: 1px solid var(--border); border-bottom-color: rg
   .agi-disclosure { margin-bottom: 6px; }
   .composer-topline em { display: none; }
 }
+
+
+/* Dexter v2 Upgrade */
+.dexter-v2-card {
+  border: 1px solid rgba(120, 170, 255, 0.35);
+  background: linear-gradient(135deg, rgba(80, 120, 255, 0.14), rgba(255, 0, 120, 0.12));
+  box-shadow: 0 0 35px rgba(120, 170, 255, 0.10);
+}
+
+.dexter-v2-card h2 {
+  color: #9dc0ff;
+}

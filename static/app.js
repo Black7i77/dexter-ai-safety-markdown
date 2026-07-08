@@ -1243,3 +1243,10 @@ async function initializeDexter() {
 }
 
 initializeDexter();
+
+
+// Dexter v2 media honesty helper
+function dexterMediaComingSoonMessage(kind) {
+  const label = kind || "media";
+  return `Dexter ${label} generation is coming soon. Real ${label} generation is not connected yet. I can help write a strong prompt instead.`;
+}
