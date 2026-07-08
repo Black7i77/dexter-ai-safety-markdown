@@ -1024,3 +1024,32 @@ kbd { padding: 2px 4px; border: 1px solid var(--border); border-bottom-color: rg
   border-radius: 16px;
   display: block;
 }
+
+/* Fix Dexter v2 main page placement */
+.dexter-upgrade-main {
+  width: min(100%, 980px);
+  margin: 28px auto 80px auto;
+  padding: 0 18px;
+  display: grid;
+  gap: 18px;
+}
+
+.dexter-upgrade-main .feature-card {
+  width: 100%;
+}
+
+.dexter-image-card {
+  border: 1px solid rgba(255, 80, 170, 0.45);
+  background: linear-gradient(135deg, rgba(255, 0, 90, 0.16), rgba(40, 0, 80, 0.24));
+  box-shadow: 0 0 35px rgba(255, 0, 90, 0.14);
+}
+
+.dexter-image-warning {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 200, 80, 0.12);
+  border: 1px solid rgba(255, 200, 80, 0.25);
+  margin: 12px 0;
+  font-weight: 700;
+}
+
